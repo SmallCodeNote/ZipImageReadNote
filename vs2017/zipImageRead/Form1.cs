@@ -18,9 +18,8 @@ namespace zipImageRead
             InitializeComponent();
         }
 
-        string[] files;
-        string zipFilePath;
-        int fileIndex = 0;
+        private ZipCacheReader zipContents;
+        private int fileIndex = 0;
         private void button_openZipFile_Click(object sender, EventArgs e)
         {
             OpenFileDialog ofd = new OpenFileDialog();
@@ -28,30 +27,30 @@ namespace zipImageRead
 
             if (ofd.ShowDialog() != DialogResult.OK) return;
 
-            zipFilePath = ofd.FileName;
-            files = ZipFileReader.ReadFilesFromZip(zipFilePath, ".jpg");
-            
+            zipContents = new ZipCacheReader(ofd.FileName);
             LoadFile();
         }
 
         private void LoadFile()
         {
-            if (files.Length < 1 || fileIndex >= files.Length) return;
-            string filename = files[fileIndex];
-            Bitmap bitmap = ZipFileReader.ReadImageFromZip(zipFilePath,filename);
+            if (zipContents.Files.Length < 1 || fileIndex >= zipContents.Files.Length) return;
+            string filename = zipContents.Files[fileIndex];
+            Bitmap bitmap = zipContents.ReadImage(filename);
+
+            if (bitmap == null) return;
 
             if (pictureBox1.Image != null) pictureBox1.Image.Dispose();
             pictureBox1.Image = bitmap;
-            label_Filename.Text = Path.GetFileNameWithoutExtension(filename);
+            label_Filename.Text = filename;
 
             button_Prev.Enabled = fileIndex > 0; 
-            button_Next.Enabled = fileIndex < files.Length - 1;
+            button_Next.Enabled = fileIndex < zipContents.Files.Length - 1;
 
         }
 
         private void button_Next_Click(object sender, EventArgs e)
         {
-            if (files != null && fileIndex < files.Length - 1)
+            if (zipContents.Files != null && fileIndex < zipContents.Files.Length - 1)
             {
                 fileIndex++;
                 LoadFile(); 
@@ -61,11 +60,16 @@ namespace zipImageRead
 
         private void button_Prev_Click(object sender, EventArgs e)
         {
-            if (files != null && fileIndex > 0)
+            if (zipContents.Files != null && fileIndex > 0)
             {
                 fileIndex--;
                 LoadFile(); 
             }
+        }
+        
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            zipContents.Dispose();
         }
     }
 }
